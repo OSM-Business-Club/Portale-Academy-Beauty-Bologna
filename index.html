@@ -3146,6 +3146,7 @@
   <button class="nav-btn" onclick="showPage('home')" id="nav-home">Home</button>
   <button class="nav-btn" onclick="showPage('clienti')" id="nav-clienti">Clienti</button>
   <button class="nav-btn" onclick="showPage('iscritti')" id="nav-iscritti">Iscritti</button>
+  <button class="nav-btn" onclick="showPage('sportello')" id="nav-sportello">Sportello di Recupero</button>
   <button class="nav-btn" onclick="showPage('firme')" id="nav-firme">Firme</button>
   <button class="nav-btn" onclick="showPage('storico')" id="nav-storico">Storico</button>
   <button class="nav-btn" onclick="showPage('report')" id="nav-report">Report</button>
@@ -3462,6 +3463,7 @@
               <th>Azienda</th>
               <th>Presenza</th>
               <th>Tipo</th>
+              <th>Sportello</th>
               <th>Incr. Fatturato %</th>
               <th>Manuale / Corso</th>
               <th>Esercizio</th>
@@ -3481,6 +3483,79 @@
     <div id="iscritti-empty" class="empty-state" style="display:none;margin-top:12px;">
       <div class="empty-state-icon">&#128203;</div>
       <div class="empty-state-text">Nessun iscritto per questa edizione. Aggiungi manualmente o sincronizza da Clienti.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: SPORTELLO DI RECUPERO ===== -->
+<div class="page" id="page-sportello">
+  <div class="section-wrap">
+    <div class="section-header no-print">
+      <div>
+        <div class="section-title">&#128203; Sportello di <span>Recupero</span></div>
+        <div class="section-subtitle">Clienti iscritte allo sportello: ultima partecipazione, info utili e materiali da consegnare</div>
+      </div>
+    </div>
+
+    <div class="stats-bar" style="margin-bottom:18px;">
+      <div class="stat-pill">
+        <div class="stat-pill-value" id="sportello-cnt-attive">0</div>
+        <div class="stat-pill-label">Nello sportello</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-value" id="sportello-cnt-completi" style="color:var(--success);">0</div>
+        <div class="stat-pill-label">Materiali completi</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-value" id="sportello-cnt-mancanti" style="color:var(--rosa);">0</div>
+        <div class="stat-pill-label">Materiali mancanti</div>
+      </div>
+    </div>
+
+    <div class="filtri-iscritti no-print" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <input type="text" id="sportello-filtro-ricerca" placeholder="&#128269; Cerca per nome, cognome o azienda..."
+        style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--testo-chiaro);padding:8px 12px;border-radius:6px;font-size:0.82rem;outline:none;min-width:240px;flex:1;"
+        oninput="renderSportello()">
+      <select class="td-select" id="sportello-filtro-consulente" style="min-width:180px;" onchange="renderSportello()">
+        <option value="">Tutti i Consulenti</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;color:var(--testo-chiaro);">
+        <input type="checkbox" id="sportello-filtro-mancanti" onchange="renderSportello()">
+        Solo materiali mancanti
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;color:var(--testo-chiaro);">
+        <input type="checkbox" id="sportello-filtro-archiviate" onchange="renderSportello()">
+        Mostra archiviate
+      </label>
+    </div>
+
+    <div id="sportello-container">
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table id="sportello-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Partner / Consulente</th>
+                <th>Ultima edizione partecipata</th>
+                <th style="text-align:center;">N. presenze</th>
+                <th>In sportello dal</th>
+                <th>Telefono</th>
+                <th>Email</th>
+                <th>Materiali</th>
+                <th>Note</th>
+                <th>Azione</th>
+              </tr>
+            </thead>
+            <tbody id="sportello-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="sportello-empty" class="empty-state" style="display:none;margin-top:12px;">
+      <div class="empty-state-icon">&#128203;</div>
+      <div class="empty-state-text">Nessuna cliente nello Sportello di Recupero. Assegna il tag dalla pagina Iscritti.</div>
     </div>
   </div>
 </div>
@@ -3706,6 +3781,63 @@
   </div>
 </div>
 
+<!-- ===== STILI SPORTELLO DI RECUPERO ===== -->
+<style>
+  /* Pulsante tag Sportello nella colonna Iscritti */
+  .btn-sportello-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+  .btn-sportello-tag:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .btn-sportello-off {
+    background: transparent;
+    border-color: rgba(143,168,184,0.4);
+    color: var(--testo-muted);
+  }
+  .btn-sportello-off:not(:disabled):hover {
+    border-color: var(--rosa-border);
+    color: var(--testo-chiaro);
+  }
+  .btn-sportello-on {
+    background: var(--rosa-light);
+    border-color: var(--rosa-border);
+    color: var(--rosa);
+  }
+  .btn-sportello-on:hover {
+    background: rgba(207,88,150,0.25);
+  }
+  /* Badge materiali nella pagina Sportello */
+  .sportello-mat-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .sportello-mat-ok {
+    background: rgba(61,191,138,0.18);
+    color: var(--success);
+    border: 1px solid rgba(61,191,138,0.35);
+  }
+  .sportello-mat-ko {
+    background: var(--rosa-light);
+    color: var(--rosa);
+    border: 1px solid var(--rosa-border);
+  }
+</style>
+
 <!-- ===== FIREBASE ===== -->
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
@@ -3774,7 +3906,8 @@ let state = {
   pmList: [],
   statistiche: {},
   organigramma: [],
-  reportNotes: {}
+  reportNotes: {},
+  sportello: []
 };
 
 // ===== UTILITY =====
@@ -3843,6 +3976,7 @@ async function load() {
   if (!state.statistiche) state.statistiche = {};
   if (!state.organigramma) state.organigramma = [];
   if (!state.reportNotes) state.reportNotes = {};
+  if (!state.sportello) state.sportello = [];
   // ===== MIGRAZIONE: consolida nomi iscritti in persone[] delle aziende =====
   migratePersoneFromIscritti();
 }
@@ -3913,6 +4047,7 @@ function showPage(name) {
   if (name === 'inventario') renderInventario();
   if (name === 'statistiche') renderStatistiche();
   if (name === 'organigramma') renderOrganigramma();
+  if (name === 'sportello') renderSportello();
   window.scrollTo(0, 0);
 }
 
@@ -4628,6 +4763,7 @@ function renderIscritti() {
             `<option value="${t}" ${isc.tipo===t?'selected':''}>${t}</option>`).join('')}
         </select>
       </td>
+      <td style="text-align:center;">${sportelloCellHtml(isc, globalIdx)}</td>
       <td class="td-number">
         <div style="display:flex;align-items:center;gap:4px;">
           <input class="td-input ${isTop5 ? 'oro-value' : ''}" type="number" min="0" max="9999" step="0.1"
@@ -4693,6 +4829,259 @@ function renderIscritti() {
 
   updateStats(edIscritti);
   renderCorsiTags();
+}
+
+// ===== SPORTELLO DI RECUPERO =====
+
+function sportelloChiave(nome, cognome, azienda) {
+  return [(nome||'').trim().toLowerCase(), (cognome||'').trim().toLowerCase(), (azienda||'').trim().toLowerCase()].join('|');
+}
+
+function sportelloMaterialiCompleti(mat) {
+  if (!mat) return false;
+  return !!(mat.fp && mat.listino && mat.costoOrario &&
+    (mat.foglioCommerciale === 'fatto' || mat.foglioCommerciale === 'non-introdotto'));
+}
+
+function sportelloContaMateriali(mat) {
+  if (!mat) return 0;
+  let n = 0;
+  if (mat.fp) n++;
+  if (mat.listino) n++;
+  if (mat.costoOrario) n++;
+  if (mat.foglioCommerciale === 'fatto' || mat.foglioCommerciale === 'non-introdotto') n++;
+  return n;
+}
+
+function sportelloCellHtml(isc, globalIdx) {
+  const hasName = !!(isc.nome || isc.cognome);
+  if (!hasName) {
+    return '<button class="btn-sportello-tag btn-sportello-off" disabled>+ Sportello</button>';
+  }
+  const chiave = sportelloChiave(isc.nome, isc.cognome, isc.azienda);
+  const record = (state.sportello || []).find(s => s.chiave === chiave);
+  if (record && record.attivo) {
+    return `<button class="btn-sportello-tag btn-sportello-on" onclick="sportelloToggle(${globalIdx})">&#128203; Sportello</button>`;
+  }
+  return `<button class="btn-sportello-tag btn-sportello-off" onclick="sportelloToggle(${globalIdx})">+ Sportello</button>`;
+}
+
+function sportelloToggle(globalIdx) {
+  const isc = state.iscritti[globalIdx];
+  if (!isc || (!isc.nome && !isc.cognome)) return;
+  const chiave = sportelloChiave(isc.nome, isc.cognome, isc.azienda);
+  const idx = (state.sportello || []).findIndex(s => s.chiave === chiave);
+  if (!state.sportello) state.sportello = [];
+  if (idx < 0) {
+    state.sportello.push({
+      id: uid(),
+      chiave,
+      nome: isc.nome || '',
+      cognome: isc.cognome || '',
+      azienda: isc.azienda || '',
+      partner: isc.partner || '',
+      consulente: isc.consulente || '',
+      attivo: true,
+      dataIngresso: new Date().toISOString().slice(0, 10),
+      telefono: '',
+      email: '',
+      note: '',
+      materiali: { fp: false, listino: false, costoOrario: false, foglioCommerciale: 'da-fare' }
+    });
+  } else if (state.sportello[idx].attivo) {
+    const nomeCompleto = ((isc.nome || '') + ' ' + (isc.cognome || '')).trim();
+    if (!confirm('Vuoi archiviare ' + nomeCompleto + ' dallo Sportello di Recupero?\nI dati verranno conservati.')) return;
+    state.sportello[idx].attivo = false;
+  } else {
+    state.sportello[idx].attivo = true;
+  }
+  save();
+  renderIscritti();
+}
+
+function sportelloGetUltimaPresenza(chiave) {
+  const ordine = state.edizioni || [];
+  let lastEd = null;
+  let lastIdx = -1;
+  (state.iscritti || []).forEach(i => {
+    const presente = i.presenza || i.presenzaG1 || i.presenzaG2;
+    if (!presente) return;
+    if (sportelloChiave(i.nome, i.cognome, i.azienda) !== chiave) return;
+    const idx = ordine.indexOf(i.edition);
+    if (idx > lastIdx) { lastIdx = idx; lastEd = i.edition; }
+  });
+  return lastEd;
+}
+
+function sportelloContaPresenze(chiave) {
+  return (state.iscritti || []).filter(i => {
+    if (!(i.presenza || i.presenzaG1 || i.presenzaG2)) return false;
+    return sportelloChiave(i.nome, i.cognome, i.azienda) === chiave;
+  }).length;
+}
+
+function sportelloUpdate(si, campo, valore) {
+  if (!state.sportello || !state.sportello[si]) return;
+  state.sportello[si][campo] = valore;
+  save();
+}
+
+function sportelloUpdateMateriale(si, campo, valore) {
+  if (!state.sportello || !state.sportello[si]) return;
+  if (!state.sportello[si].materiali) {
+    state.sportello[si].materiali = { fp: false, listino: false, costoOrario: false, foglioCommerciale: 'da-fare' };
+  }
+  state.sportello[si].materiali[campo] = valore;
+  save();
+  renderSportello();
+}
+
+function sportelloArchivia(si) {
+  if (!state.sportello || !state.sportello[si]) return;
+  const s = state.sportello[si];
+  const nomeCompleto = ((s.nome || '') + ' ' + (s.cognome || '')).trim();
+  if (!confirm('Vuoi archiviare ' + nomeCompleto + ' dallo Sportello di Recupero?\nI dati verranno conservati.')) return;
+  state.sportello[si].attivo = false;
+  save();
+  renderSportello();
+}
+
+function sportelloRipristina(si) {
+  if (!state.sportello || !state.sportello[si]) return;
+  state.sportello[si].attivo = true;
+  save();
+  renderSportello();
+}
+
+function renderSportello() {
+  const tuttiAttivi = (state.sportello || []).filter(s => s.attivo);
+  const completi = tuttiAttivi.filter(s => sportelloMaterialiCompleti(s.materiali));
+  const cntAttive = document.getElementById('sportello-cnt-attive');
+  const cntCompleti = document.getElementById('sportello-cnt-completi');
+  const cntMancanti = document.getElementById('sportello-cnt-mancanti');
+  if (cntAttive) cntAttive.textContent = tuttiAttivi.length;
+  if (cntCompleti) cntCompleti.textContent = completi.length;
+  if (cntMancanti) cntMancanti.textContent = tuttiAttivi.length - completi.length;
+
+  // Popola filtro consulenti
+  const selCons = document.getElementById('sportello-filtro-consulente');
+  if (selCons) {
+    const consulenti = [...new Set(tuttiAttivi.map(s => s.consulente).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }));
+    const valAttuale = selCons.value;
+    selCons.innerHTML = '<option value="">Tutti i Consulenti</option>' +
+      consulenti.map(c => `<option value="${escHtml(c)}"${c === valAttuale ? ' selected' : ''}>${escHtml(c)}</option>`).join('');
+  }
+
+  const tbody = document.getElementById('sportello-tbody');
+  const empty = document.getElementById('sportello-empty');
+  if (!tbody || !empty) return;
+
+  if (tuttiAttivi.length === 0 && !(state.sportello || []).length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  const filtroRicerca = ((document.getElementById('sportello-filtro-ricerca') || {}).value || '').toLowerCase().trim();
+  const filtroConsulente = (document.getElementById('sportello-filtro-consulente') || {}).value || '';
+  const soloMancanti = !!(document.getElementById('sportello-filtro-mancanti') || {}).checked;
+  const mostraArchiviate = !!(document.getElementById('sportello-filtro-archiviate') || {}).checked;
+
+  const records = (state.sportello || []).filter(s => {
+    if (!mostraArchiviate && !s.attivo) return false;
+    if (filtroConsulente && s.consulente !== filtroConsulente) return false;
+    if (filtroRicerca) {
+      if (!(s.nome || '').toLowerCase().includes(filtroRicerca) &&
+          !(s.cognome || '').toLowerCase().includes(filtroRicerca) &&
+          !(s.azienda || '').toLowerCase().includes(filtroRicerca)) return false;
+    }
+    if (soloMancanti && sportelloMaterialiCompleti(s.materiali)) return false;
+    return true;
+  }).slice().sort((a, b) => (a.cognome || '').localeCompare(b.cognome || '', 'it', { sensitivity: 'base' }));
+
+  if (records.length === 0 && tuttiAttivi.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if (records.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--testo-muted);padding:24px;font-style:italic;">Nessun risultato con i filtri applicati.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = records.map(s => {
+    const si = state.sportello.indexOf(s);
+    const ult = sportelloGetUltimaPresenza(s.chiave);
+    const nPresenze = sportelloContaPresenze(s.chiave);
+    const nMat = sportelloContaMateriali(s.materiali);
+    const matOk = sportelloMaterialiCompleti(s.materiali);
+    const rowStyle = s.attivo ? '' : 'opacity:0.45;';
+    const mat = s.materiali || { fp: false, listino: false, costoOrario: false, foglioCommerciale: 'da-fare' };
+    return `<tr style="${rowStyle}">
+      <td style="min-width:160px;">
+        <div style="font-weight:700;">${escHtml(((s.nome || '') + ' ' + (s.cognome || '')).trim())}</div>
+        <div style="font-size:0.78rem;color:var(--testo-muted);">${escHtml(s.azienda || '')}</div>
+      </td>
+      <td style="font-size:0.82rem;min-width:140px;">
+        <div>${escHtml(s.partner || '—')}</div>
+        <div style="color:var(--testo-muted);">${escHtml(s.consulente || '—')}</div>
+      </td>
+      <td style="font-size:0.82rem;white-space:nowrap;min-width:140px;">
+        ${ult ? escHtml(ult) : '<span style="color:var(--testo-muted);font-style:italic;">Nessuna presenza</span>'}
+      </td>
+      <td style="text-align:center;font-size:0.88rem;">${nPresenze}</td>
+      <td style="min-width:140px;">
+        <input type="date" class="td-input" value="${escHtml(s.dataIngresso || '')}"
+          onchange="sportelloUpdate(${si},'dataIngresso',this.value)">
+      </td>
+      <td style="min-width:120px;">
+        <input class="td-input" type="text" value="${escHtml(s.telefono || '')}" placeholder="—"
+          onchange="sportelloUpdate(${si},'telefono',this.value)">
+      </td>
+      <td style="min-width:160px;">
+        <input class="td-input" type="email" value="${escHtml(s.email || '')}" placeholder="—"
+          onchange="sportelloUpdate(${si},'email',this.value)">
+      </td>
+      <td style="min-width:220px;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" ${mat.fp ? 'checked' : ''}
+              onchange="sportelloUpdateMateriale(${si},'fp',this.checked)">
+            FP aggiornato
+          </label>
+          <label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" ${mat.listino ? 'checked' : ''}
+              onchange="sportelloUpdateMateriale(${si},'listino',this.checked)">
+            Listino Prezzi
+          </label>
+          <label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" ${mat.costoOrario ? 'checked' : ''}
+              onchange="sportelloUpdateMateriale(${si},'costoOrario',this.checked)">
+            Costo orario personale (CdL)
+          </label>
+          <select class="td-select" style="font-size:0.78rem;margin-top:2px;"
+            onchange="sportelloUpdateMateriale(${si},'foglioCommerciale',this.value)">
+            <option value="da-fare" ${mat.foglioCommerciale === 'da-fare' ? 'selected' : ''}>Foglio commerciale: da consegnare</option>
+            <option value="fatto" ${mat.foglioCommerciale === 'fatto' ? 'selected' : ''}>Foglio commerciale: consegnato</option>
+            <option value="non-introdotto" ${mat.foglioCommerciale === 'non-introdotto' ? 'selected' : ''}>Foglio commerciale: non introdotto</option>
+          </select>
+          <span class="sportello-mat-badge ${matOk ? 'sportello-mat-ok' : 'sportello-mat-ko'}">${matOk ? '4/4 completi &#10003;' : nMat + '/4 — ne manca' + (4 - nMat === 1 ? ' 1' : 'no ' + (4 - nMat))}</span>
+        </div>
+      </td>
+      <td style="min-width:140px;">
+        <textarea class="td-textarea" rows="2"
+          onchange="sportelloUpdate(${si},'note',this.value)">${escHtml(s.note || '')}</textarea>
+      </td>
+      <td style="white-space:nowrap;">
+        ${s.attivo
+          ? `<button class="btn btn-ghost" style="font-size:0.75rem;padding:4px 10px;" onclick="sportelloArchivia(${si})">Archivia</button>`
+          : `<button class="btn btn-outline" style="font-size:0.75rem;padding:4px 10px;" onclick="sportelloRipristina(${si})">Ripristina</button>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function updatePresenza(gi, checked) {
