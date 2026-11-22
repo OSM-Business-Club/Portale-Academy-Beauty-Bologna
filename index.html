@@ -7592,6 +7592,7 @@ function printInventario() {
           <div id="stat-filtro-anni-fatturato" class="stat-anni-filtro"></div>
           <canvas id="stat-canvas-fatturato" height="200" style="cursor:crosshair;display:block;max-width:100%;"></canvas>
         </div>
+        <div id="stat-fat-progressivo"></div>
       </div>
 
       <!-- ===== UTILI ===== -->
@@ -8457,6 +8458,7 @@ function salvaStatisticaValore(azId, tipo, anno, mese, valore) {
   save();
   setTimeout(function() {
     aggiornaRiepilogoStatistiche();
+    if (tipo === 'fatturato') renderProgressivoFatturato(); // aggiorna il progressivo in tempo reale
     var selAz2 = document.getElementById('stat-azienda-select');
     var elCorr2 = document.getElementById('stat-anno-corrente');
     var elPrec2 = document.getElementById('stat-anno-prec');
@@ -8801,6 +8803,69 @@ function aggiornaRiepilogoStatistiche() {
   if (elUtil) elUtil.innerHTML = incCard('Utili', totUP, totUC, annoPrec, annoCorr);
 }
 
+/**
+ * Tabella fatturato progressivo (da inizio anno) mese per mese:
+ * totale cumulato anno corrente vs anno precedente fino allo stesso mese, con variazione %.
+ * I mesi senza dato contano come 0 nel progressivo. (Come nel portale MBS Emilia.)
+ */
+function renderProgressivoFatturato() {
+  var div = document.getElementById('stat-fat-progressivo');
+  if (!div) return;
+  var selAz = document.getElementById('stat-azienda-select');
+  if (!selAz || !selAz.value) { div.innerHTML = ''; return; }
+  var azId = selAz.value;
+  var annoCorr = parseInt((document.getElementById('stat-anno-corrente') || {}).value) || new Date().getFullYear();
+  var annoPrec = parseInt((document.getElementById('stat-anno-prec') || {}).value) || (annoCorr - 1);
+  var dati = (state.statistiche && state.statistiche[azId] && state.statistiche[azId].fatturato) || {};
+
+  function val(anno, m) {
+    var k = String(anno) + '-' + (m < 10 ? '0' + m : String(m));
+    var v = dati[k];
+    return (v === undefined || v === null || isNaN(parseFloat(v))) ? null : parseFloat(v);
+  }
+
+  // Ultimo mese con almeno un dato in uno dei due anni
+  var ultimo = 0;
+  for (var u = 1; u <= 12; u++) {
+    if (val(annoCorr, u) !== null || val(annoPrec, u) !== null) ultimo = u;
+  }
+  if (ultimo === 0) { div.innerHTML = ''; return; }
+
+  var nd = '<span style="color:var(--testo-muted);">&#8212;</span>';
+  var thBase = 'padding:8px 10px;font-size:0.68rem;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid rgba(207,88,150,0.2);';
+  var html = '<div style="margin-top:18px;">'
+    + '<div style="color:var(--rosa);font-weight:700;font-size:0.85rem;margin-bottom:8px;">&#128202;&nbsp;Fatturato progressivo da inizio anno &#8212; ' + annoCorr + ' vs ' + annoPrec + '</div>'
+    + '<div class="stat-tabella-wrap" style="overflow-x:auto;">'
+    + '<table style="width:100%;min-width:420px;border-collapse:collapse;">'
+    + '<thead><tr>'
+    + '<th style="text-align:left;color:var(--rosa);' + thBase + '">Fino a</th>'
+    + '<th style="text-align:right;color:var(--rosa);' + thBase + '">Progressivo ' + annoCorr + '</th>'
+    + '<th style="text-align:right;color:var(--testo-muted);' + thBase + '">Progressivo ' + annoPrec + '</th>'
+    + '<th style="text-align:right;color:var(--testo-muted);' + thBase + '">Variazione %</th>'
+    + '</tr></thead><tbody>';
+
+  var cumC = 0, cumP = 0;
+  for (var m = 1; m <= ultimo; m++) {
+    var vC = val(annoCorr, m), vP = val(annoPrec, m);
+    cumC += vC || 0;
+    cumP += vP || 0;
+    var pctHtml = nd;
+    if (vC !== null && cumP > 0) {
+      var inc = ((cumC - cumP) / cumP * 100).toFixed(1);
+      var col = parseFloat(inc) >= 0 ? 'var(--success)' : 'var(--danger)';
+      pctHtml = '<span style="color:' + col + ';font-weight:700;">' + (parseFloat(inc) >= 0 ? '+' : '') + inc + '%</span>';
+    }
+    html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">'
+      + '<td style="padding:7px 10px;color:var(--testo-chiaro);font-size:0.83rem;">' + MESI_NOMI_STAT[m - 1] + '</td>'
+      + '<td style="text-align:right;padding:7px 10px;color:var(--testo-chiaro);font-weight:700;font-size:0.83rem;">' + (vC !== null ? formatEur(cumC) : nd) + '</td>'
+      + '<td style="text-align:right;padding:7px 10px;color:var(--testo-muted);font-size:0.83rem;">' + (cumP > 0 ? formatEur(cumP) : nd) + '</td>'
+      + '<td style="text-align:right;padding:7px 10px;">' + pctHtml + '</td>'
+      + '</tr>';
+  }
+  html += '</tbody></table></div></div>';
+  div.innerHTML = html;
+}
+
 function renderStatistiche() {
   var aziende = getAziendeList();
   var selAz = document.getElementById('stat-azienda-select');
@@ -8899,6 +8964,7 @@ function renderStatistiche() {
   if (tabUtil) tabUtil.innerHTML = buildTabella('utili');
 
   aggiornaRiepilogoStatistiche();
+  renderProgressivoFatturato();
 
   setTimeout(function() {
     disegnaGraficoStatistiche('stat-canvas-fatturato', annoPrec, annoCorr, azId, 'fatturato');
